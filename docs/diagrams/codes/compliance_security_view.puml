@@ -1,0 +1,23 @@
+graph TB
+    subgraph "Compliance & Security Framework"
+        subgraph "Identity & Access"
+            Login[User Credentials] --> JWT[Auth Service: JWT RS256]
+            JWT --> Role[RBAC: Admin/User/Advisor]
+            Role --> RLS[PostgreSQL Row-Level Security]
+        end
+
+        subgraph "Data Protection (PII)"
+            Sensitive[User Data/Transactions] --> AES["App-level AES-256-GCM Encryption"]
+            AES --> PBKDF2["Per-user Encryption Keys"]
+            Sensitive --> Hash["SHA-256 Email Hashing (Lookups)"]
+        end
+
+        subgraph "Regulatory Compliance"
+            Audit["Immutable Audit Logs"] --> SHA["Payload Hashing & Trigger-locks"]
+            Privacy["Right to be Forgotten"] --> SoftDelete["Soft Delete Logic"]
+            Traffic["Data in Transit"] --> TLS["TLS 1.3 / SSL Termination"]
+        end
+
+        RLS --> Audit
+        AES --> Audit
+    end

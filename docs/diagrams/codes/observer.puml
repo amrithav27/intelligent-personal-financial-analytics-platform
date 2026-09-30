@@ -1,0 +1,39 @@
+classDiagram
+    class Subject {
+        <<interface>>
+        +Attach(Observer)
+        +Detach(Observer)
+        +Notify()
+    }
+    note for Subject "for all o in observers {\l  o->Update()\l}"
+
+    class AnalyticsEngine {
+        -subjectState
+        +GetState()
+        +SetState()
+    }
+    note for AnalyticsEngine "return subjectState"
+
+    class Observer {
+        <<interface>>
+        +Update()
+    }
+
+    class AnomalyService {
+        -observerState
+        +Update()
+    }
+    note for AnomalyService "observerState = \lsubject->GetState()"
+
+    class CacheWorker {
+        -observerState
+        +Update()
+    }
+    note for CacheWorker "observerState = \lsubject->GetState()"
+
+    Subject <|-- AnalyticsEngine
+    Subject o-- Observer : observers
+    Observer <|-- AnomalyService
+    Observer <|-- CacheWorker
+    AnomalyService --> AnalyticsEngine : subject
+    CacheWorker --> AnalyticsEngine : subject

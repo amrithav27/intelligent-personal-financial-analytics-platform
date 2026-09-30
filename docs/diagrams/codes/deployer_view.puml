@@ -1,0 +1,30 @@
+graph TB
+    subgraph "Orchestration & Infrastructure"
+        subgraph "Containerized Services (Docker)"
+            Compose["Docker Compose V2"]
+            Compose --> Svc1["Auth Microservice"]
+            Compose --> Svc2["Ingestion Microservice"]
+            Compose --> Svc3["Analytics Microservice"]
+            Compose --> Svc4["Anomaly Microservice"]
+            Compose --> Svc5["Notification Microservice"]
+        end
+
+        subgraph "Edge & Traffic Management"
+            Gateway["nginx Gateway"]
+            Gateway --> TLS["TLS termination (SSL)"]
+            Gateway --> AuthR["JWT auth_request handler"]
+            Gateway --> WSS["WS Upgrade Proxy"]
+        end
+
+        subgraph "Persistence Volumes"
+            PGVol["Postgres Data Hub"]
+            CHVol["ClickHouse Data Hub"]
+            RDVol["Redis Memory Hub"]
+        end
+
+        Svc1 --> PGVol
+        Svc3 --> CHVol
+        Svc3 --> RDVol
+        
+        Gateway -- "Traffic Routing" --> Compose
+    end

@@ -1,0 +1,24 @@
+classDiagram
+    class ICategorizer {
+        <<interface>>
+        +categorize(description: str, mcc: str) CategoryResult
+    }
+
+    class RuleBasedCategorizer {
+        +categorize(description: str, mcc: str) CategoryResult
+    }
+
+    class LLMCategorizer {
+        -api_key: str
+        +categorize(description: str, mcc: str) CategoryResult
+    }
+
+    class CategorizationService {
+        -primary: RuleBasedCategorizer
+        -fallback: LLMCategorizer
+        +classify(transaction: Transaction) CategoryResult
+    }
+
+    ICategorizer <|.. RuleBasedCategorizer
+    ICategorizer <|.. LLMCategorizer
+    CategorizationService --> ICategorizer : selects at runtime

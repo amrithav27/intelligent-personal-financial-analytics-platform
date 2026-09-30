@@ -1,0 +1,37 @@
+classDiagram
+    class ITransactionAdapter {
+        <<interface>>
+        +validate(raw_data: dict) bool
+        +transform(raw_data: dict) UnifiedTransaction
+    }
+
+    class ICICIBankAdapter {
+        +validate(raw_data: dict) bool
+        +transform(raw_data: dict) UnifiedTransaction
+    }
+
+    class CSVUploadAdapter {
+        +validate(raw_data: dict) bool
+        +transform(raw_data: dict) UnifiedTransaction
+    }
+
+    class ManualEntryAdapter {
+        +validate(raw_data: dict) bool
+        +transform(raw_data: dict) UnifiedTransaction
+    }
+
+    class AdapterRegistry {
+        -adapters: dict
+        +register(source_type: str, adapter: ITransactionAdapter)
+        +get_adapter(source_type: str) ITransactionAdapter
+    }
+
+    class IngestionService {
+        +ingest_batch(source_type: str, data: list)
+    }
+
+    ITransactionAdapter <|.. ICICIBankAdapter
+    ITransactionAdapter <|.. CSVUploadAdapter
+    ITransactionAdapter <|.. ManualEntryAdapter
+    AdapterRegistry o-- ITransactionAdapter
+    IngestionService --> AdapterRegistry : uses

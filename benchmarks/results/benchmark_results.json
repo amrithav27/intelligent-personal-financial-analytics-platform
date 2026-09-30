@@ -1,0 +1,181 @@
+{
+  "timestamp": "2026-04-21T16:18:41.933563",
+  "config": {
+    "rows": 1000000,
+    "iterations": 10,
+    "users": 20
+  },
+  "insert": {
+    "pg_seconds": 22.511,
+    "ch_seconds": 0.681,
+    "pg_rows_per_sec": 44423,
+    "ch_rows_per_sec": 1468134
+  },
+  "storage": {
+    "pg_bytes": 202678272,
+    "ch_bytes": 36632957,
+    "compression_ratio": 5.53
+  },
+  "queries": {
+    "Monthly Aggregation": {
+      "description": "SUM(amount) GROUP BY month \u2014 time-series aggregation",
+      "pg_median_ms": 147.95,
+      "ch_median_ms": 12.5,
+      "pg_p95_ms": 211.25,
+      "ch_p95_ms": 13.18,
+      "speedup": 11.84,
+      "pg_all_ms": [
+        211.25,
+        143.39,
+        147.26,
+        156.26,
+        144.43,
+        143.62,
+        144.97,
+        148.75,
+        148.64,
+        149.12
+      ],
+      "ch_all_ms": [
+        12.88,
+        12.81,
+        12.49,
+        12.74,
+        12.31,
+        12.14,
+        13.18,
+        12.51,
+        12.14,
+        12.48
+      ]
+    },
+    "Category Distribution": {
+      "description": "SUM by category \u2014 OLAP pivot/grouping query",
+      "pg_median_ms": 108.03,
+      "ch_median_ms": 17.4,
+      "pg_p95_ms": 116.48,
+      "ch_p95_ms": 27.82,
+      "speedup": 6.21,
+      "pg_all_ms": [
+        113.62,
+        107.21,
+        105.75,
+        108.16,
+        105.36,
+        111.94,
+        116.48,
+        104.39,
+        107.9,
+        110.73
+      ],
+      "ch_all_ms": [
+        17.42,
+        17.57,
+        27.82,
+        17.37,
+        17.2,
+        17.62,
+        17.72,
+        17.27,
+        17.36,
+        17.27
+      ]
+    },
+    "User Spending Trend": {
+      "description": "Per-user monthly average \u2014 sliding window analytics",
+      "pg_median_ms": 32.88,
+      "ch_median_ms": 7.96,
+      "pg_p95_ms": 67.28,
+      "ch_p95_ms": 9.39,
+      "speedup": 4.13,
+      "pg_all_ms": [
+        67.28,
+        31.52,
+        33.11,
+        32.65,
+        32.8,
+        33.22,
+        39.31,
+        32.64,
+        31.34,
+        32.96
+      ],
+      "ch_all_ms": [
+        8.14,
+        8.11,
+        7.59,
+        8.1,
+        9.39,
+        8.33,
+        7.3,
+        7.47,
+        7.69,
+        7.82
+      ]
+    },
+    "Top-N Spenders": {
+      "description": "Top 10 users by total spending \u2014 full table scan + sort",
+      "pg_median_ms": 90.36,
+      "ch_median_ms": 13.08,
+      "pg_p95_ms": 99.87,
+      "ch_p95_ms": 14.48,
+      "speedup": 6.91,
+      "pg_all_ms": [
+        96.02,
+        89.9,
+        89.94,
+        99.87,
+        91.34,
+        87.74,
+        89.21,
+        88.47,
+        90.79,
+        96.77
+      ],
+      "ch_all_ms": [
+        12.69,
+        12.88,
+        13.76,
+        14.48,
+        12.78,
+        12.78,
+        13.11,
+        13.14,
+        13.11,
+        13.06
+      ]
+    },
+    "Time Range Filter": {
+      "description": "Recent 3-month filter + aggregation \u2014 partition pruning advantage",
+      "pg_median_ms": 72.88,
+      "ch_median_ms": 9.44,
+      "pg_p95_ms": 88.2,
+      "ch_p95_ms": 9.93,
+      "speedup": 7.72,
+      "pg_all_ms": [
+        78.68,
+        72.82,
+        70.52,
+        73.22,
+        70.77,
+        72.11,
+        72.93,
+        70.69,
+        73.13,
+        88.2
+      ],
+      "ch_all_ms": [
+        8.54,
+        9.15,
+        9.17,
+        9.93,
+        9.73,
+        9.51,
+        9.37,
+        9.2,
+        9.73,
+        9.7
+      ]
+    }
+  }
+}

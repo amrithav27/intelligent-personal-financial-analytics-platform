@@ -1,0 +1,35 @@
+graph LR
+    subgraph Internet
+        U[User Browser]
+    end
+
+    subgraph Docker_Compose_Network
+        G[phoenix-gateway:80/443]
+        
+        subgraph App_Tier
+            Auth[phoenix-auth:8001]
+            Ing[phoenix-ingestion:8002]
+            Anl[phoenix-analytics:8003]
+            Ano[phoenix-anomaly:8004]
+        end
+        
+        subgraph Data_Tier
+            Postgres[(phoenix-postgres:5432)]
+            Redis[(phoenix-redis:6379)]
+            ClickHouse[(phoenix-clickhouse:8123)]
+        end
+    end
+
+    U -- HTTPS --> G
+    G --> Auth
+    G --> Ing
+    G --> Anl
+    G --> Ano
+    
+    Auth --> Postgres
+    Ing --> Postgres
+    Ing --> Redis
+    Anl --> Postgres
+    Anl --> Redis
+    Anl --> ClickHouse
+    Ano --> Redis

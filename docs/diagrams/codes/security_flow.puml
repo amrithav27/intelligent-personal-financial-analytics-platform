@@ -1,0 +1,39 @@
+sequenceDiagram
+    autonumber
+    participant User as User / Client
+    participant Nginx as nginx Gateway
+    participant Auth as Auth Service
+    participant Service as Backend Service
+    participant Vault as Redis/Key Store
+    participant DB as PostgreSQL (RLS)
+    participant Audit as Audit Log (Immutable)
+
+    Note over User, Auth: Phase 1: Authentication & Token Issuance
+    User->>Nginx: POST /api/v1/auth/login
+    Nginx->>Auth: Forward Login Credentials
+    Auth->>Auth: Verify Bcrypt Hash
+    Auth-->>User: Issue RS256 JWT (Access + Refresh)
+
+    Note over User, Service: Phase 2: Gateway Validation & Routing
+    User->>Nginx: API Request + Bearer <JWT>
+    Nginx->>Auth: auth_request validator (Internal)
+    Auth->>Auth: Validate JWT Signature & Expiry
+    Auth-->>Nginx: 200 OK + X-User-ID header
+    Nginx->>Service: Proxy Request + Injected X-User-ID
+
+    Note over Service, Vault: Phase 3: Authorization & PII Protection
+    Service->>Service: Authorize X-User-ID for Endpoint
+    Service->>Vault: Retrieve User-Specific AES Key
+    Service->>Service: AES-256-GCM Decrypt (PII Fields)
+    Service->>Service: Scrub Sensitive Data from Local Logs (Sensitive Masking)
+    Service->>Service: Log Non-PII Request Metadata
+
+    Note over Service, Audit: Phase 4: Data Isolation & Audit Trail
+    Service->>DB: SET LOCAL app.current_user_id = <UUID>
+    Service->>DB: Execute Transaction / Query
+    DB->>DB: Enforce RLS user_isolation Policy
+    DB->>Audit: SQL Trigger: Write Immutable Operation Log
+    Audit->>Audit: Hash Payload + Lock Row (Trigger prevents Edit/Delete)
+    
+    DB-->>Service: Return Result
+    Service-->>User: Encrypted Response Payload

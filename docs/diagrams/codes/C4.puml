@@ -1,0 +1,62 @@
+workspace {
+
+    model {
+        user = person "User" "Individual managing personal finances"
+
+        bank_api = softwareSystem "Bank APIs" "External banking data sources"
+        csv_file = softwareSystem "CSV Files" "User uploaded transaction exports"
+
+        phoenix = softwareSystem "Phoenix Platform" {
+
+            frontend = container "Frontend Dashboard" "Visualizes financial insights" "React, TypeScript"
+            gateway = container "API Gateway" "Routes requests, terminates TLS, validates JWT" "Nginx"
+
+            auth = container "Auth Service" "Manages users and JWT tokens" "FastAPI"
+            ingestion = container "Ingestion Service" "Normalizes and persists transactions" "FastAPI"
+
+            analytics = container "Analytics Engine" "Computes FHS, trends, and aggregates" "FastAPI"
+            anomaly = container "Anomaly Service" "Detects spending anomalies" "FastAPI"
+            recommendation = container "Recommendation Service" "Suggests budgets and goals" "FastAPI"
+            notification = container "Notification Service" "Sends real-time alerts" "FastAPI"
+
+            postgres = container "Primary DB" "Stores OLTP data" "PostgreSQL"
+            redis = container "Cache & State" "Caches scores and states" "Redis"
+            clickhouse = container "Analytical Store" "Stores time-series data" "ClickHouse"
+        }
+
+    
+        user -> frontend "Uses" "HTTPS"
+        frontend -> gateway "API Calls" "HTTPS"
+
+        gateway -> auth "Auth"
+        gateway -> ingestion "Ingestion"
+        gateway -> analytics "Analytics"
+        gateway -> anomaly "Anomaly"
+        gateway -> recommendation "Recommendation"
+        gateway -> notification "WebSocket"
+
+        ingestion -> postgres "Writes transactions"
+        ingestion -> bank_api "Pulls data" "REST"
+        user -> ingestion "Uploads CSV"
+
+        analytics -> postgres "Reads data"
+        analytics -> clickhouse "Writes trends"
+        analytics -> redis "Caches results"
+
+        anomaly -> redis "Reads/Writes state"
+        anomaly -> notification "Triggers alerts"
+
+        recommendation -> redis "Uses cached data"
+
+        notification -> gateway "Push alerts" "WebSocket"
+    }
+
+    views {
+        container phoenix {
+            include *
+            autolayout lr
+        }
+
+        theme default
+    }
+}

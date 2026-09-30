@@ -1,0 +1,27 @@
+graph TB
+    subgraph "Main Application Interface"
+        App["Phoenix Web Dashboard"]
+        
+        subgraph "Navigation & Commands"
+            Nav["Side Navigation Bar"]
+            Nav --> Dashboard["Home Overview"]
+            Nav --> Trans["Transactions Ledger"]
+            Nav --> Rec["AI Financial Advisory"]
+            Nav --> AlertsP["Security & Alerts Centre"]
+        end
+
+        subgraph "Primary Workspace"
+            Dashboard --> Stats["FHS Gauge & Spending KPIs"]
+            Trans --> Ingest["Ingestion Dropzone (CSV/Bank)"]
+            Trans --> List["Infinite Scroll Transaction Table"]
+            Rec --> Insights["50/30/20 Budget Insights"]
+        end
+
+        subgraph "Real-time Interaction"
+            WS["WebSocket Client"] --> Notify["Toast Notifications Overlay"]
+            AlertsP --> History["Alert Resolution View"]
+        end
+
+        App --> Nav
+        App --> Dashboard
+    end

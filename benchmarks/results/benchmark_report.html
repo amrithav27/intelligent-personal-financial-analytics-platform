@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phoenix — ClickHouse vs PostgreSQL Benchmark Report</title>
+<style>
+    :root {
+        --bg: #0f172a; --surface: #1e293b; --surface2: #334155;
+        --text: #e2e8f0; --muted: #94a3b8; --accent: #38bdf8;
+        --pg-color: #6366f1; --ch-color: #22c55e;
+        --success: #22c55e; --warning: #eab308; --danger: #ef4444;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:var(--bg); color:var(--text); font-family:'Inter','Segoe UI',sans-serif;
+           line-height:1.6; padding:2rem; max-width:1100px; margin:0 auto; }
+    h1 { font-size:2rem; margin-bottom:0.5rem; background:linear-gradient(135deg,var(--accent),#a78bfa);
+         -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    h2 { font-size:1.3rem; margin:2rem 0 1rem; color:var(--accent); }
+    h3 { font-size:1rem; color:var(--text); }
+    .subtitle { color:var(--muted); font-size:0.9rem; margin-bottom:2rem; }
+    .card { background:var(--surface); border-radius:12px; padding:1.5rem; margin-bottom:1.5rem;
+             border:1px solid var(--surface2); }
+    .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1rem; }
+    .stat { background:var(--surface2); border-radius:10px; padding:1.2rem; text-align:center; }
+    .stat-value { font-size:1.8rem; font-weight:700; }
+    .stat-label { color:var(--muted); font-size:0.8rem; text-transform:uppercase; letter-spacing:0.05em; }
+    .pg-color { color:var(--pg-color); } .ch-color { color:var(--ch-color); }
+    .query-block { background:var(--surface2); border-radius:10px; padding:1.2rem; margin-bottom:1rem; }
+    .query-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem; }
+    .query-desc { color:var(--muted); font-size:0.82rem; margin-bottom:0.8rem; }
+    .speedup { font-size:0.75rem; font-weight:600; color:#fff; padding:3px 10px; border-radius:20px; }
+    .bar-group { display:flex; flex-direction:column; gap:6px; }
+    .bar-row { display:flex; align-items:center; gap:8px; }
+    .bar-label { width:90px; font-size:0.78rem; color:var(--muted); text-align:right; }
+    .bar-track { flex:1; background:var(--surface); border-radius:6px; height:22px; overflow:hidden; }
+    .bar { height:100%; border-radius:6px; transition:width 0.5s ease; min-width:2px; }
+    .pg-bar { background:linear-gradient(90deg,var(--pg-color),#818cf8); }
+    .ch-bar { background:linear-gradient(90deg,var(--ch-color),#4ade80); }
+    .bar-value { width:70px; font-size:0.78rem; font-weight:600; }
+    .storage-visual { display:flex; gap:1.5rem; align-items:flex-end; justify-content:center; padding:1rem; }
+    .storage-bar { display:flex; flex-direction:column; align-items:center; gap:0.5rem; }
+    .storage-block { border-radius:8px; width:120px; transition:height 0.5s ease; }
+    .storage-label { font-size:0.8rem; color:var(--muted); }
+    .storage-size { font-weight:700; font-size:1rem; }
+    .adr-note { background:#1a2332; border-left:3px solid var(--accent); padding:1rem 1.2rem;
+                 border-radius:0 8px 8px 0; margin:1.5rem 0; font-size:0.85rem; }
+    .adr-note strong { color:var(--accent); }
+    table { width:100%; border-collapse:collapse; font-size:0.85rem; }
+    th { text-align:left; padding:10px 12px; color:var(--muted); border-bottom:1px solid var(--surface2); }
+    td { padding:10px 12px; border-bottom:1px solid rgba(255,255,255,0.05); }
+    .legend { display:flex; gap:1.5rem; margin:1rem 0; font-size:0.82rem; }
+    .legend-item { display:flex; align-items:center; gap:6px; }
+    .legend-dot { width:12px; height:12px; border-radius:50%; }
+    footer { text-align:center; color:var(--muted); font-size:0.75rem; margin-top:3rem; }
+</style>
+</head>
+<body>
+<h1>⚡ ClickHouse vs PostgreSQL</h1>
+<p class="subtitle">Phoenix Financial Analytics Platform — ADR-002 Polyglot Persistence Benchmark<br>
+   Generated: 2026-04-21T16:18:41.933563 | Dataset: 1,000,000 transactions, 20 users</p>
+
+<div class="adr-note">
+    <strong>ADR-002:</strong> PostgreSQL provides ACID guarantees for OLTP (transactional reads/writes).
+    ClickHouse handles OLAP (analytical aggregations, time-series queries) using columnar storage,
+    compression, and partition pruning. This benchmark validates the performance separation.
+</div>
+
+<h2>📊 Key Metrics</h2>
+<div class="stats-grid">
+    <div class="stat">
+        <div class="stat-value" style="color:var(--ch-color)">5.5x</div>
+        <div class="stat-label">Compression Ratio</div>
+    </div>
+    <div class="stat">
+        <div class="stat-value pg-color">193.3 MB</div>
+        <div class="stat-label">PostgreSQL Disk Usage</div>
+    </div>
+    <div class="stat">
+        <div class="stat-value ch-color">34.9 MB</div>
+        <div class="stat-label">ClickHouse Disk Usage</div>
+    </div>
+    <div class="stat">
+        <div class="stat-value" style="color:var(--accent)">1,000,000</div>
+        <div class="stat-label">Transactions Tested</div>
+    </div>
+</div>
+
+<h2>🚀 Insert Throughput</h2>
+<div class="card">
+    <div class="stats-grid">
+        <div class="stat">
+            <div class="stat-value pg-color">44,423</div>
+            <div class="stat-label">PostgreSQL rows/sec</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value ch-color">1,468,134</div>
+            <div class="stat-label">ClickHouse rows/sec</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value pg-color">22.51s</div>
+            <div class="stat-label">PostgreSQL Insert Time</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value ch-color">0.68s</div>
+            <div class="stat-label">ClickHouse Insert Time</div>
+        </div>
+    </div>
+</div>
+
+<h2>💾 Storage & Compression</h2>
+<div class="card">
+    <p style="color:var(--muted);font-size:0.85rem;margin-bottom:1rem;">
+        ClickHouse uses columnar storage with LZ4/ZSTD compression. Identical data stored in both databases:
+    </p>
+    <div class="storage-visual">
+        <div class="storage-bar">
+            <div class="storage-block" style="height:200px;background:linear-gradient(180deg,var(--pg-color),#818cf8);"></div>
+            <div class="storage-size pg-color">193.3 MB</div>
+            <div class="storage-label">PostgreSQL</div>
+        </div>
+        <div class="storage-bar">
+            <div class="storage-block" style="height:36px;background:linear-gradient(180deg,var(--ch-color),#4ade80);"></div>
+            <div class="storage-size ch-color">34.9 MB</div>
+            <div class="storage-label">ClickHouse</div>
+        </div>
+    </div>
+    <p style="text-align:center;margin-top:0.5rem;font-size:0.9rem;">
+        ClickHouse achieves <strong style="color:var(--ch-color)">5.5x compression</strong> through
+        columnar storage + LZ4 compression
+    </p>
+</div>
+
+<h2>⏱️ Query Latency Comparison</h2>
+<div class="card">
+    <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--pg-color)"></div> PostgreSQL (OLTP)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--ch-color)"></div> ClickHouse (OLAP)</div>
+    </div>
+    
+        <div class="query-block">
+            <div class="query-header">
+                <h3>Monthly Aggregation</h3>
+                <span class="speedup" style="background:#22c55e">11.8x faster</span>
+            </div>
+            <p class="query-desc">SUM(amount) GROUP BY month — time-series aggregation</p>
+            <div class="bar-group">
+                <div class="bar-row">
+                    <span class="bar-label">PostgreSQL</span>
+                    <div class="bar-track">
+                        <div class="bar pg-bar" style="width:100.0%"></div>
+                    </div>
+                    <span class="bar-value">147.9ms</span>
+                </div>
+                <div class="bar-row">
+                    <span class="bar-label">ClickHouse</span>
+                    <div class="bar-track">
+                        <div class="bar ch-bar" style="width:8.448800270361609%"></div>
+                    </div>
+                    <span class="bar-value">12.5ms</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="query-block">
+            <div class="query-header">
+                <h3>Category Distribution</h3>
+                <span class="speedup" style="background:#22c55e">6.2x faster</span>
+            </div>
+            <p class="query-desc">SUM by category — OLAP pivot/grouping query</p>
+            <div class="bar-group">
+                <div class="bar-row">
+                    <span class="bar-label">PostgreSQL</span>
+                    <div class="bar-track">
+                        <div class="bar pg-bar" style="width:100.0%"></div>
+                    </div>
+                    <span class="bar-value">108.0ms</span>
+                </div>
+                <div class="bar-row">
+                    <span class="bar-label">ClickHouse</span>
+                    <div class="bar-track">
+                        <div class="bar ch-bar" style="width:16.106637045265202%"></div>
+                    </div>
+                    <span class="bar-value">17.4ms</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="query-block">
+            <div class="query-header">
+                <h3>User Spending Trend</h3>
+                <span class="speedup" style="background:#22c55e">4.1x faster</span>
+            </div>
+            <p class="query-desc">Per-user monthly average — sliding window analytics</p>
+            <div class="bar-group">
+                <div class="bar-row">
+                    <span class="bar-label">PostgreSQL</span>
+                    <div class="bar-track">
+                        <div class="bar pg-bar" style="width:100.0%"></div>
+                    </div>
+                    <span class="bar-value">32.9ms</span>
+                </div>
+                <div class="bar-row">
+                    <span class="bar-label">ClickHouse</span>
+                    <div class="bar-track">
+                        <div class="bar ch-bar" style="width:24.209245742092456%"></div>
+                    </div>
+                    <span class="bar-value">8.0ms</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="query-block">
+            <div class="query-header">
+                <h3>Top-N Spenders</h3>
+                <span class="speedup" style="background:#22c55e">6.9x faster</span>
+            </div>
+            <p class="query-desc">Top 10 users by total spending — full table scan + sort</p>
+            <div class="bar-group">
+                <div class="bar-row">
+                    <span class="bar-label">PostgreSQL</span>
+                    <div class="bar-track">
+                        <div class="bar pg-bar" style="width:100.0%"></div>
+                    </div>
+                    <span class="bar-value">90.4ms</span>
+                </div>
+                <div class="bar-row">
+                    <span class="bar-label">ClickHouse</span>
+                    <div class="bar-track">
+                        <div class="bar ch-bar" style="width:14.475431606905712%"></div>
+                    </div>
+                    <span class="bar-value">13.1ms</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="query-block">
+            <div class="query-header">
+                <h3>Time Range Filter</h3>
+                <span class="speedup" style="background:#22c55e">7.7x faster</span>
+            </div>
+            <p class="query-desc">Recent 3-month filter + aggregation — partition pruning advantage</p>
+            <div class="bar-group">
+                <div class="bar-row">
+                    <span class="bar-label">PostgreSQL</span>
+                    <div class="bar-track">
+                        <div class="bar pg-bar" style="width:100.0%"></div>
+                    </div>
+                    <span class="bar-value">72.9ms</span>
+                </div>
+                <div class="bar-row">
+                    <span class="bar-label">ClickHouse</span>
+                    <div class="bar-track">
+                        <div class="bar ch-bar" style="width:12.952799121844127%"></div>
+                    </div>
+                    <span class="bar-value">9.4ms</span>
+                </div>
+            </div>
+        </div>
+        
+</div>
+
+<h2>📋 Detailed Results</h2>
+<div class="card">
+    <table>
+        <thead>
+            <tr><th>Query</th><th>PG Median</th><th>CH Median</th><th>PG p95</th><th>CH p95</th><th>Speedup</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>Monthly Aggregation</td><td>147.9ms</td><td>12.5ms</td><td>211.2ms</td><td>13.2ms</td><td style="color:var(--ch-color)">11.8x</td></tr><tr><td>Category Distribution</td><td>108.0ms</td><td>17.4ms</td><td>116.5ms</td><td>27.8ms</td><td style="color:var(--ch-color)">6.2x</td></tr><tr><td>User Spending Trend</td><td>32.9ms</td><td>8.0ms</td><td>67.3ms</td><td>9.4ms</td><td style="color:var(--ch-color)">4.1x</td></tr><tr><td>Top-N Spenders</td><td>90.4ms</td><td>13.1ms</td><td>99.9ms</td><td>14.5ms</td><td style="color:var(--ch-color)">6.9x</td></tr><tr><td>Time Range Filter</td><td>72.9ms</td><td>9.4ms</td><td>88.2ms</td><td>9.9ms</td><td style="color:var(--ch-color)">7.7x</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<h2>🏗️ Why ClickHouse Wins for Analytics</h2>
+<div class="card" style="font-size:0.88rem;">
+    <table>
+        <thead><tr><th>Feature</th><th>PostgreSQL</th><th>ClickHouse</th></tr></thead>
+        <tbody>
+            <tr><td>Storage Model</td><td>Row-based</td><td style="color:var(--ch-color)">Columnar</td></tr>
+            <tr><td>Compression</td><td>TOAST (page-level)</td><td style="color:var(--ch-color)">LZ4/ZSTD per-column</td></tr>
+            <tr><td>Aggregations</td><td>Scans all columns</td><td style="color:var(--ch-color)">Reads only needed columns</td></tr>
+            <tr><td>Partitioning</td><td>Manual partition tables</td><td style="color:var(--ch-color)">Native PARTITION BY, auto-pruning</td></tr>
+            <tr><td>ACID Transactions</td><td style="color:var(--pg-color)">Full ACID</td><td>Eventual consistency</td></tr>
+            <tr><td>Ideal Workload</td><td style="color:var(--pg-color)">OLTP (single row R/W)</td><td style="color:var(--ch-color)">OLAP (bulk analytics)</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<footer>
+    Phoenix Financial Analytics Platform — ADR-002 Benchmark Report<br>
+    Team 23 | Generated 2026-04-21T16:18:41.933563
+</footer>
+</body>
+</html>

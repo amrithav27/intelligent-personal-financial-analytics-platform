@@ -1,0 +1,28 @@
+sequenceDiagram
+    participant U as User
+    participant G as API Gateway
+    participant I as Ingestion Service
+    participant DB as PostgreSQL
+    participant A as Analytics Engine
+    participant CH as ClickHouse
+    participant R as Redis
+    participant AN as Anomaly Service
+    participant N as Notification Service
+
+    U->>G: POST /api/v1/transactions/ingest (CSV)
+    G->>I: Internal Route
+    I->>I: Normalize via Adapter
+    I->>DB: Persist UnifiedTransactions
+    I->>A: Trigger Analytics (REST)
+    A->>A: Compute FHS & Aggregates
+    A->>CH: Insert History/Trends (Async)
+    A->>R: Invalidate Cache
+    A->>AN: Notify Completion (Webhook)
+    AN->>R: Read Baselines
+    AN->>AN: Compute Z-Score
+    alt is Anomaly (|Z| > 2.5)
+        AN->>N: Create Alert
+        N->>G: Push WebSocket Alert
+        G->>U: Browser Toast Notification
+    end
+    I-->>U: 202 Accepted {ingested: N}

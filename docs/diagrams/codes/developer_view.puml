@@ -1,0 +1,29 @@
+graph TB
+    subgraph "Phoenix Development Environment"
+        subgraph "Frontend Stack"
+            FEDev["Frontend (React 18)"]
+            FEDev --> ReactTS["TypeScript & Vite"]
+            ReactTS --> RQ["React Query (State Sync)"]
+            ReactTS --> Recharts["Recharts (D3 Wrapper)"]
+            ReactTS --> Zustand["Zustand (Global Store)"]
+        end
+
+        subgraph "Backend Stack"
+            BEDev["Backend (FastAPI)"]
+            BEDev --> Py311["Python 3.11 Runtime"]
+            Py311 --> Pydantic["Pydantic (Validation)"]
+            Py311 --> SQLA["SQLAlchemy (Async ORM)"]
+            Py311 --> Crypt["Cryptography (AES-GCM)"]
+        end
+
+        subgraph "Engineering Tools"
+            QA["QA & Benchmarking"]
+            QA --> Pytest["Pytest (Unit/Int)"]
+            QA --> Locust["Locust (NFR Validation)"]
+            QA --> Lint["Ruff & ESLint"]
+        end
+
+        FEDev -- "REST API Calls" --> BEDev
+        BEDev -- "Schema Enforcement" --> Pydantic
+        BEDev -- "Performance Evidence" --> QA
+    end

@@ -1,0 +1,42 @@
+erDiagram
+    USERS ||--o{ TRANSACTION_SOURCES : owns
+    USERS ||--o{ TRANSACTIONS : has
+    USERS ||--o{ FINANCIAL_HEALTH_SCORES : tracks
+    USERS ||--o{ BUDGETS : sets
+    USERS ||--o{ ANOMALY_ALERTS : receives
+    
+    TRANSACTION_SOURCES ||--o{ TRANSACTIONS : provides
+    TRANSACTIONS ||--|| TRANSACTION_CATEGORIES : categorized_as
+    CATEGORIES ||--o{ TRANSACTION_CATEGORIES : classifies
+    CATEGORIES ||--o{ BUDGETS : defines
+    
+    USERS {
+        uuid id PK
+        string email
+        string display_name
+        text password_hash
+    }
+    
+    TRANSACTIONS {
+        uuid id PK
+        uuid user_id FK
+        uuid source_id FK
+        numeric amount
+        timestamp ts
+    }
+    
+    FINANCIAL_HEALTH_SCORES {
+        uuid id PK
+        uuid user_id FK
+        numeric score
+        numeric savings_rate
+        timestamp computed_at
+    }
+    
+    BUDGETS {
+        uuid id PK
+        uuid user_id FK
+        int category_id FK
+        date month
+        numeric limit_amount
+    }
